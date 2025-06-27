@@ -1,4 +1,3 @@
-
 import unittest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
@@ -11,6 +10,7 @@ from src.common_helper import CommonHelper
 class TestCommonHelper(unittest.TestCase):
 
     def setUp(self):
+        # Provide all expected mocked tables here
         self.mock_tables = {
             "db_nxtgen.Org_Hier_Mapping": MagicMock(),
             "db_nxtgen.Org_Hierarchy": MagicMock(),
