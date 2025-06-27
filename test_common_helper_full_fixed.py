@@ -11,37 +11,42 @@ from src.common_helper.common_helper import CommonHelper
 class TestCommonHelper(unittest.TestCase):
 
     def setUp(self):
-        # Provide all expected mocked tables here
         self.mock_tables = {
             "db_nxtgen.Org_Hier_Mapping": MagicMock(),
             "db_nxtgen.Org_Hierarchy": MagicMock(),
             "db_nxtgen.Workflow": MagicMock(),
+            "db_nxtgen.Process_Area_Mapping": MagicMock(),
+            "db_nxtgen.MappingField_Combo_Table": MagicMock(),
         }
         self.helper = None
 
-    def test_find_max_length(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_find_max_length(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         data = {"a": "one", "b": "three", "c": "sevenchars"}
         result = self.helper.find_max_length(data)
         self.assertEqual(result, 10)
 
-    def test_cleaned_dict(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_cleaned_dict(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         input_data = [{"a": 1, "b": None}, {"a": "", "b": 2}]
         result = self.helper.cleaned_dict(input_data)
         self.assertEqual(result, [{"a": 1}, {"b": 2}])
 
-    def test_remove_unnecessary_keys_in_list_of_dict(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_remove_unnecessary_keys_in_list_of_dict(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         sample = [{"a": 1, "b": 2, "c": 3}]
         result = self.helper.remove_unnecessary_keys_in_list_of_dict(sample, ["b", "c"])
         self.assertEqual(result, [{"a": 1}])
 
-    def test_serialize_row(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_serialize_row(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         row = {
             "dyn_col_1": "approve",
@@ -55,8 +60,9 @@ class TestCommonHelper(unittest.TestCase):
         self.assertEqual(result["to"], "to_val")
         self.assertEqual(result["date"], "2024-05-01T12:30:00")
 
-    def test_build_tree_view_json_simple(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_build_tree_view_json_simple(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         input_data = [
             {
@@ -71,14 +77,16 @@ class TestCommonHelper(unittest.TestCase):
         self.assertEqual(result[0]["orgName"], "Company")
         self.assertEqual(result[0]["children"][0]["orgName"], "Finance")
 
-    def test_groupby_field_empty(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_groupby_field_empty(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         self.helper = CommonHelper()
         self.assertEqual(self.helper.groupby_field([]), [])
 
-    def test_process_group_no_mapping_id(self, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
-        mock_db.session.execute.return_value.fetchone.return_value = MagicMock(_mapping={})
+    def test_process_group_no_mapping_id(self, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
+        mock_db_common.session.execute.return_value.fetchone.return_value = MagicMock(_mapping={})
         self.helper = CommonHelper()
 
         sample_data = pd.DataFrame([{
@@ -107,8 +115,9 @@ class TestCommonHelper(unittest.TestCase):
         self.assertIn("wid", result)
 
     @patch("src.common_helper.requests.get")
-    def test_get_user_details(self, mock_get, mock_db, mock_base):
-        mock_base.metadata.tables = self.mock_tables
+    def test_get_user_details(self, mock_get, mock_db_common, mock_base_common, mock_db_helper, mock_base_helper):
+        mock_base_common.metadata.tables = self.mock_tables
+        mock_base_helper.metadata.tables = self.mock_tables
         mock_get.return_value = MagicMock(status_code=200, json=lambda: {"user": "mocked"})
         self.helper = CommonHelper()
         headers = {"Authorization": "Bearer token"}
