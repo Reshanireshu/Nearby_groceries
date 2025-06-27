@@ -15,14 +15,16 @@ class TestKpiManualInputHelper(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Patch Base and db for the entire test case
-        cls.base_patcher = patch('src.helper.kpi_manual_input_helper.Base')
+        # Patch Base in both kpi_manual_input_helper and common_helper
+        cls.base_helper_patcher = patch('src.helper.kpi_manual_input_helper.Base')
+        cls.base_common_patcher = patch('src.common_helper.common_helper.Base')
         cls.db_patcher = patch('src.helper.kpi_manual_input_helper.db')
 
-        cls.mock_base = cls.base_patcher.start()
+        cls.mock_base_helper = cls.base_helper_patcher.start()
+        cls.mock_base_common = cls.base_common_patcher.start()
         cls.mock_db = cls.db_patcher.start()
 
-        # Provide fake metadata.tables
+        # Provide mocked tables for metadata
         cls.mock_tables = {
             "db_nxtgen.Org_Hier_Mapping": MagicMock(),
             "db_nxtgen.Org_Hierarchy": MagicMock(),
@@ -30,12 +32,15 @@ class TestKpiManualInputHelper(unittest.TestCase):
             "db_nxtgen.Process_Area_Mapping": MagicMock(),
             "db_nxtgen.MappingField_Combo_Table": MagicMock(),
         }
-        cls.mock_base.metadata.tables = cls.mock_tables
+
+        cls.mock_base_helper.metadata.tables = cls.mock_tables
+        cls.mock_base_common.metadata.tables = cls.mock_tables
         cls.mock_db.metadata.tables = cls.mock_tables
 
     @classmethod
     def tearDownClass(cls):
-        cls.base_patcher.stop()
+        cls.base_helper_patcher.stop()
+        cls.base_common_patcher.stop()
         cls.db_patcher.stop()
 
     def setUp(self):
@@ -49,16 +54,17 @@ class TestKpiManualInputHelper(unittest.TestCase):
         self.mock_api_messages = self.api_patcher.start()
         self.addCleanup(self.api_patcher.stop)
 
-        # Patch Base.classes
+        # Patch Base.classes for ORM access
         self.base_classes_patcher = patch('src.helper.kpi_manual_input_helper.Base.classes', new_callable=MagicMock)
         self.mock_base_classes = self.base_classes_patcher.start()
         self.addCleanup(self.base_classes_patcher.stop)
+
         self.mock_base_classes.Bookmark = Bookmark
         self.mock_base_classes.Bookmark_Type_Static = BookmarkTypeStatic
         self.mock_base_classes.Bookmark_Val = BookmarkVal
         self.mock_base_classes.User = User
 
-        # Init helper
+        # Instantiate helper
         self.kpi_manual_input_helper_instance = kpi_manual_input()
 
     def test_save_book_mark_no_data(self):
