@@ -13,55 +13,52 @@ from src.constants.api_messages import api_messages
 
 class TestKpiManualInputHelper(unittest.TestCase):
 
-    def setUp(self):
-        # Patch Base in common_helper
-        base_patcher = patch('src.common_helper.common_helper.Base')
-        self.mock_base_common = base_patcher.start()
-        self.addCleanup(base_patcher.stop)
+    @classmethod
+    def setUpClass(cls):
+        # Patch Base and db for the entire test case
+        cls.base_patcher = patch('src.helper.kpi_manual_input_helper.Base')
+        cls.db_patcher = patch('src.helper.kpi_manual_input_helper.db')
 
-        # Patch Base in helper
-        base_helper_patcher = patch('src.helper.kpi_manual_input_helper.Base')
-        self.mock_base_helper = base_helper_patcher.start()
-        self.addCleanup(base_helper_patcher.stop)
+        cls.mock_base = cls.base_patcher.start()
+        cls.mock_db = cls.db_patcher.start()
 
-        # Patch db in helper (required so metadata.tables lookup does not fail)
-        db_patcher = patch('src.helper.kpi_manual_input_helper.db')
-        self.mock_db = db_patcher.start()
-        self.addCleanup(db_patcher.stop)
-
-        # Provide all required mocked tables
-        mock_tables = {
+        # Provide fake metadata.tables
+        cls.mock_tables = {
             "db_nxtgen.Org_Hier_Mapping": MagicMock(),
             "db_nxtgen.Org_Hierarchy": MagicMock(),
             "db_nxtgen.Workflow": MagicMock(),
             "db_nxtgen.Process_Area_Mapping": MagicMock(),
             "db_nxtgen.MappingField_Combo_Table": MagicMock(),
         }
+        cls.mock_base.metadata.tables = cls.mock_tables
+        cls.mock_db.metadata.tables = cls.mock_tables
 
-        self.mock_base_common.metadata.tables = mock_tables
-        self.mock_base_helper.metadata.tables = mock_tables
-        self.mock_db.metadata.tables = mock_tables
+    @classmethod
+    def tearDownClass(cls):
+        cls.base_patcher.stop()
+        cls.db_patcher.stop()
 
-        # Patch db.session separately to mock ORM queries
-        db_session_patcher = patch('src.helper.kpi_manual_input_helper.db.session')
-        self.mock_db_session = db_session_patcher.start()
-        self.addCleanup(db_session_patcher.stop)
+    def setUp(self):
+        # Patch db.session
+        self.db_session_patcher = patch('src.helper.kpi_manual_input_helper.db.session')
+        self.mock_db_session = self.db_session_patcher.start()
+        self.addCleanup(self.db_session_patcher.stop)
 
         # Patch api_messages
-        api_patcher = patch('src.helper.kpi_manual_input_helper.api_messages')
-        self.mock_api_messages = api_patcher.start()
-        self.addCleanup(api_patcher.stop)
+        self.api_patcher = patch('src.helper.kpi_manual_input_helper.api_messages')
+        self.mock_api_messages = self.api_patcher.start()
+        self.addCleanup(self.api_patcher.stop)
 
-        # Patch Base.classes for ORM model access
-        base_classes_patcher = patch('src.helper.kpi_manual_input_helper.Base.classes', new_callable=MagicMock)
-        self.mock_base_classes = base_classes_patcher.start()
-        self.addCleanup(base_classes_patcher.stop)
+        # Patch Base.classes
+        self.base_classes_patcher = patch('src.helper.kpi_manual_input_helper.Base.classes', new_callable=MagicMock)
+        self.mock_base_classes = self.base_classes_patcher.start()
+        self.addCleanup(self.base_classes_patcher.stop)
         self.mock_base_classes.Bookmark = Bookmark
         self.mock_base_classes.Bookmark_Type_Static = BookmarkTypeStatic
         self.mock_base_classes.Bookmark_Val = BookmarkVal
         self.mock_base_classes.User = User
 
-        # ✅ Instantiate the helper after all patches are in place
+        # Init helper
         self.kpi_manual_input_helper_instance = kpi_manual_input()
 
     def test_save_book_mark_no_data(self):
