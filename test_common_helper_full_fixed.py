@@ -2,11 +2,12 @@ import unittest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 import pandas as pd
-from src.common_helper import CommonHelper
+from src.common_helper.common_helper import CommonHelper
 
-
-@patch("src.common_helper.Base")
-@patch("src.common_helper.db")
+@patch("src.helper.org_process_mapping_helper.Base")
+@patch("src.helper.org_process_mapping_helper.db")
+@patch("src.common_helper.common_helper.Base")
+@patch("src.common_helper.common_helper.db")
 class TestCommonHelper(unittest.TestCase):
 
     def setUp(self):
@@ -113,7 +114,3 @@ class TestCommonHelper(unittest.TestCase):
         headers = {"Authorization": "Bearer token"}
         result = self.helper.get_user_details(headers)
         self.assertEqual(result.status_code, 200)
-
-
-if __name__ == "__main__":
-    unittest.main()
