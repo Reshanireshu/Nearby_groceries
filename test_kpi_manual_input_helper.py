@@ -14,26 +14,43 @@ from src.constants.api_messages import api_messages
 class TestKpiManualInputHelper(unittest.TestCase):
 
     def setUp(self):
-        # Patch db session and api messages
-        self.patcher_db_session = patch('src.helper.kpi_manual_input_helper.db.session')
-        self.mock_db_session = self.patcher_db_session.start()
+    
+    # STEP 1: Patch Base first so CommonHelper inside kpi_manual_input won't crash
+    base_patcher = patch('src.common_helper.common_helper.Base')
+    self.mock_base = base_patcher.start()
+    self.addCleanup(base_patcher.stop)
 
-        self.patcher_api_messages = patch('src.helper.kpi_manual_input_helper.api_messages')
-        self.mock_api_messages = self.patcher_api_messages.start()
+    # Provide all required mocked tables before CommonHelper gets instantiated
+    self.mock_base.metadata.tables = {
+        "db_nxtgen.Org_Hier_Mapping": MagicMock(),
+        "db_nxtgen.Org_Hierarchy": MagicMock(),
+        "db_nxtgen.Workflow": MagicMock(),
+        "db_nxtgen.Process_Area_Mapping": MagicMock(),
+        "db_nxtgen.MappingField_Combo_Table": MagicMock(),
+    }
 
-        # Patch Base.metadata.tables to prevent KeyError in CommonHelper
-        self.patcher_base = patch('src.common_helper.common_helper.Base')
-        self.mock_base = self.patcher_base.start()
-        self.mock_base.metadata.tables = {
-            "db_nxtgen.Org_Hier_Mapping": MagicMock(),
-            "db_nxtgen.Org_Hierarchy": MagicMock(),
-            "db_nxtgen.Workflow": MagicMock(),
-            "db_nxtgen.Process_Area_Mapping": MagicMock(),
-            "db_nxtgen.MappingField_Combo_Table": MagicMock(),
-        }
+    # STEP 2: Patch db.session
+    db_session_patcher = patch('src.helper.kpi_manual_input_helper.db.session')
+    self.mock_db_session = db_session_patcher.start()
+    self.addCleanup(db_session_patcher.stop)
 
-        # Safe to instantiate helper
-        self.kpi_manual_input_helper_instance = kpi_manual_input()
+    # STEP 3: Patch api_messages
+    api_patcher = patch('src.helper.kpi_manual_input_helper.api_messages')
+    self.mock_api_messages = api_patcher.start()
+    self.addCleanup(api_patcher.stop)
+
+    # STEP 4: Patch Base.classes used in the helper
+    base_classes_patcher = patch('src.helper.kpi_manual_input_helper.Base.classes', new_callable=MagicMock)
+    self.mock_base_classes = base_classes_patcher.start()
+    self.addCleanup(base_classes_patcher.stop)
+    self.mock_base_classes.Bookmark = Bookmark
+    self.mock_base_classes.Bookmark_Type_Static = BookmarkTypeStatic
+    self.mock_base_classes.Bookmark_Val = BookmarkVal
+    self.mock_base_classes.User = User
+
+    # ✅ SAFE TO INIT kpi_manual_input NOW
+    self.kpi_manual_input_helper_instance = kpi_manual_input()
+
 
         # Patch Base.classes used in the helper
         self.patcher_base_classes = patch('src.helper.kpi_manual_input_helper.Base.classes', new_callable=MagicMock)
